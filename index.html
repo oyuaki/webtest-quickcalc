@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WEBテスト計算トレーナー｜計数の暗算・概算を無料で練習</title>
+<meta name="description" content="WEBテストの計数（図表の読み取り）対策に。割合・増減率・倍率・分数↔%・概算を1問数秒で処理する練習ができる無料Webアプリ。自己採点で筆算依存率とカテゴリ別の弱点を記録。登録不要・スマホ対応。" />
+<link rel="canonical" href="https://oyuaki.github.io/webtest-quickcalc/" />
+<meta name="theme-color" content="#3457d5" />
+<link rel="icon" href="favicon.ico?v=3" sizes="16x16 32x32 48x48" />
+<link rel="icon" href="favicon.svg?v=3" type="image/svg+xml" sizes="any" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3" sizes="180x180" />
+<link rel="manifest" href="site.webmanifest?v=3" />
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="ja_JP" />
+<meta property="og:site_name" content="WEBテスト計算トレーナー" />
+<meta property="og:title" content="WEBテスト計算トレーナー｜計数の暗算・概算を無料で練習" />
+<meta property="og:description" content="WEBテストの計数を時間内に解き切るための計算スピード練習。割合・増減率・倍率・分数↔%を暗算・概算で素早く処理する力を鍛える無料Webアプリ。" />
+<meta property="og:url" content="https://oyuaki.github.io/webtest-quickcalc/" />
+<meta property="og:image" content="https://oyuaki.github.io/webtest-quickcalc/ogp.png?v=2" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="WEBテスト計算トレーナー。計数を、もっと速く。暗算・概算を1問ずつ練習。無料・登録不要。" />
+<meta name="twitter:card" content="summary_large_image" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "WEBテスト計算トレーナー",
+  "url": "https://oyuaki.github.io/webtest-quickcalc/",
+  "description": "WEBテストの計数対策として、割合・増減率・倍率・分数↔%・概算を暗算で素早く処理する練習ができる無料Webアプリ。",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "Any",
+  "inLanguage": "ja",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" }
+}
+</script>
+<style>
+  :root{
+    --bg:#f5f7fb; --panel:#ffffff; --panel2:#f8fafc; --text:#18212f; --muted:#667085;
+    --line:#e4e7ec; --accent:#3457d5; --accent2:#eaf0ff; --track:#e9edf4;
+    --ok:#157f3b; --okbg:#effaf2; --mid:#b54708; --midbg:#fffaeb; --bad:#b42318; --badbg:#fff4f3;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0f141b; --panel:#171e28; --panel2:#1d2531; --text:#e6ebf2; --muted:#98a2b3;
+      --line:#2a3443; --accent:#6d8bff; --accent2:#1f2a4a; --track:#263041;
+      --ok:#4ade80; --okbg:#12301f; --mid:#fbbf24; --midbg:#33270d; --bad:#f87171; --badbg:#3a1717;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;background:var(--bg);color:var(--text)}
+  .wrap{max-width:920px;margin:0 auto;padding:24px 16px 48px}
+  h1{font-size:26px;margin:0 0 6px}
+  .lead{margin:0 0 18px;color:var(--muted);font-size:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid > .card{margin-top:14px}
+  .row-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+  .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+  select,button{font:inherit;color:inherit}
+  select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+  button{border:0;border-radius:10px;padding:12px 16px;cursor:pointer}
+  .primary{background:var(--accent);color:#fff;font-weight:700}
+  .secondary{background:var(--panel2);border:1px solid var(--line)}
+  .secondary:disabled{opacity:.5;cursor:default}
+  .link{background:none;padding:4px 6px;color:var(--accent);font-size:13px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{background:var(--panel2);border:1px solid var(--line);padding:8px 12px;border-radius:99px;font-size:14px;color:var(--muted)}
+  .chip[aria-pressed="true"]{background:var(--accent2);border-color:var(--accent);color:var(--accent);font-weight:700}
+  .opts{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px}
+  .check{display:flex;align-items:center;gap:6px;margin:0;font-size:14px;color:var(--text);cursor:pointer}
+  .footer-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  kbd{font-family:inherit;font-size:11px;border:1px solid currentColor;border-radius:4px;padding:0 4px;margin-left:6px;opacity:.6;font-weight:400}
+
+  .meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+  .bar{height:8px;background:var(--track);border-radius:99px;overflow:hidden;margin-top:8px}
+  .bar > div{height:100%;width:0;background:var(--ok);transition:width .1s linear}
+  .bar.warn > div{background:var(--mid)} .bar.over > div{background:var(--bad)}
+  .question{font-size:40px;font-weight:800;text-align:center;padding:34px 8px 10px;white-space:pre-line;line-height:1.35;font-variant-numeric:tabular-nums}
+  .question.long{font-size:26px}
+  .answer{text-align:center;min-height:96px;padding:6px 0 10px;visibility:hidden}
+  .answer.show{visibility:visible}
+  .answer .ans{font-size:34px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+  .answer .sub{font-size:14px;color:var(--muted);margin-top:4px}
+  .answer .badge{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:var(--badbg);color:var(--bad);margin-left:6px}
+  .actions{display:grid;gap:10px}
+  .actions .big{min-height:60px;font-size:18px}
+  .grades{grid-template-columns:repeat(3,1fr)}
+  .g{min-height:64px;font-size:16px;font-weight:700;border:1px solid var(--line)}
+  .g.ok{background:var(--okbg);color:var(--ok)} .g.mid{background:var(--midbg);color:var(--mid)} .g.bad{background:var(--badbg);color:var(--bad)}
+  .play-foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .stat b{font-size:22px;display:block;font-variant-numeric:tabular-nums}
+  table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+  th{font-size:12px;color:var(--muted);font-weight:600}
+  tr.dim td{color:var(--muted)}
+  .table-scroll{overflow-x:auto}
+  .tag{font-size:11px;padding:1px 6px;border-radius:99px;background:var(--badbg);color:var(--bad);margin-left:4px;white-space:nowrap}
+  .slow{color:var(--bad);font-weight:700}
+  .small{font-size:13px;color:var(--muted)}
+  .list{list-style:none;padding:0;margin:0}
+  .list li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .list li span:last-child{white-space:nowrap;color:var(--muted)}
+  details.card summary{cursor:pointer;font-weight:700}
+  .memo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin-top:12px;font-size:14px;font-variant-numeric:tabular-nums}
+  .memo-grid div{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+  .rules{margin:12px 0 0;padding-left:20px;font-size:14px}
+  .rules li{margin:4px 0}
+  .about h2{font-size:18px;margin:0 0 10px}
+  .about h3{font-size:15px;margin:16px 0 6px}
+  .about p,.about ol{font-size:14px;line-height:1.7;margin:0}
+  .about ol{padding-left:20px}
+  .about a{color:var(--accent)}
+  [hidden]{display:none !important}
+  @media(max-width:720px){
+    .grid,.controls{grid-template-columns:1fr}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .question{font-size:32px}
+    .question.long{font-size:22px}
+    .g{font-size:14px;padding:10px 6px}
+    kbd{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>WEBテスト計算トレーナー</h1>
+  <p class="lead">計算1回あたり10秒以内が目標。頭の中で解いたら答えを表示して自己採点。</p>
+
+  <section class="card" id="setup">
+    <div class="row-head">
+      <strong>カテゴリ</strong>
+      <span><button class="link" id="allCats" type="button">全部</button><button class="link" id="noCats" type="button">解除</button></span>
+    </div>
+    <div class="chips" id="catChips"></div>
+    <div class="controls">
+      <div>
+        <label for="level">難易度</label>
+        <select id="level">
+          <option value="1">基礎</option>
+          <option value="2" selected>標準</option>
+          <option value="3">本番寄り</option>
+        </select>
+      </div>
+      <div>
+        <label for="target">1問の目安時間</label>
+        <select id="target">
+          <option value="auto" selected>自動（カテゴリ別）</option>
+          <option value="5">5秒</option>
+          <option value="10">10秒</option>
+          <option value="15">15秒</option>
+          <option value="20">20秒</option>
+          <option value="30">30秒</option>
+          <option value="0">なし</option>
+        </select>
+      </div>
+      <div>
+        <label for="setSize">セット</label>
+        <select id="setSize">
+          <option value="10">10問</option>
+          <option value="20" selected>20問</option>
+          <option value="30">30問</option>
+          <option value="s180">3分スプリント</option>
+          <option value="s300">5分スプリント</option>
+          <option value="0">無制限</option>
+        </select>
+      </div>
+    </div>
+    <div class="opts">
+      <label class="check"><input type="checkbox" id="weakFirst" checked> 苦手カテゴリを多めに出す</label>
+      <label class="check"><input type="checkbox" id="autoReveal" checked> 目安を超えたら自動で答えを表示</label>
+    </div>
+    <div class="footer-actions">
+      <button class="primary" id="startBtn" type="button">開始<kbd>Enter</kbd></button>
+      <button class="secondary" id="reviewBtn" type="button">ミス・遅い問題を復習（0）</button>
+    </div>
+  </section>
+
+  <section class="card" id="summary" hidden></section>
+
+  <section class="card" id="play" hidden>
+    <div class="meta">
+      <span id="catLabel"></span>
+      <span id="progress"></span>
+      <span id="timerLabel">0.0秒</span>
+    </div>
+    <div class="bar" id="timeBarWrap"><div id="timeBar"></div></div>
+    <div class="question" id="question"></div>
+    <div class="answer" id="answerBox">
+      <div class="ans" id="answer"></div>
+      <div class="sub" id="answerSub"></div>
+    </div>
+    <div class="actions" id="thinkActions">
+      <button class="primary big" id="revealBtn" type="button">答えを見る<kbd>Space</kbd></button>
+    </div>
+    <div class="actions grades" id="gradeActions" hidden>
+      <button class="g ok" data-g="ok" type="button">○ 暗算で正解<kbd>1</kbd></button>
+      <button class="g mid" data-g="memo" type="button">△ 筆算・メモで正解<kbd>2</kbd></button>
+      <button class="g bad" data-g="ng" type="button">× 不正解<kbd>3</kbd></button>
+    </div>
+    <div class="play-foot">
+      <span class="small">Esc で終了</span>
+      <button class="link" id="endBtn" type="button">終了する</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row-head"><strong>全体（直近100問）</strong></div>
+    <div class="stats">
+      <div class="stat"><span class="small">暗算正解率 ○</span><b id="okStat">-</b></div>
+      <div class="stat"><span class="small">筆算依存率 △</span><b id="memoStat">-</b></div>
+      <div class="stat"><span class="small">平均時間</span><b id="avgStat">-</b></div>
+      <div class="stat"><span class="small">目安内</span><b id="withinStat">-</b></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row-head"><strong>カテゴリ別</strong><span class="small">各カテゴリ直近30問で集計</span></div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>カテゴリ</th><th>回数</th><th>○</th><th>△</th><th>×</th><th>平均 / 目安</th><th>目安内</th></tr></thead>
+        <tbody id="catBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <div class="row-head"><strong>時間を使った問題</strong><span class="small">目安比ワースト</span></div>
+      <ul class="list" id="slowList"></ul>
+    </section>
+    <section class="card">
+      <div class="row-head"><strong>セット履歴</strong></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>日時</th><th>問題</th><th>○</th><th>平均</th><th>目安内</th></tr></thead>
+          <tbody id="sessionBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <details class="card">
+    <summary>暗記表（分数 ↔ % ・ 逆数）</summary>
+    <div class="memo-grid" id="memoGrid"></div>
+    <ul class="rules">
+      <li>×25 = ×100÷4 ／ ×125 = ×1000÷8 ／ ×11 = 両端を残して間に和</li>
+      <li>÷1.25 = ×0.8 ／ ÷0.8 = ×1.25 ／ ÷2.5 = ×0.4</li>
+      <li>増減率 = 差 ÷ 元 ／ 前年比 +x% で y → 前年 = y ÷ (1+x)</li>
+      <li>選択肢が離れていれば上2桁で十分</li>
+    </ul>
+  </details>
+
+  <div class="footer-actions">
+    <button class="secondary" id="resetBtn" type="button">記録をすべてリセット</button>
+  </div>
+
+  <footer class="card about">
+    <h2>このアプリについて</h2>
+    <p>WEBテストの計数（図表の読み取り）で繰り返し出てくる割合・増減率・倍率などの計算を、筆算せずに暗算・概算で素早く処理するための無料の練習アプリです。</p>
+    <h3>使い方</h3>
+    <ol>
+      <li>カテゴリと難易度を選んで開始</li>
+      <li>頭の中で解いたら「答えを見る」（Space）</li>
+      <li>○ 暗算で正解／△ 筆算・メモで正解／× 不正解 を自己採点（1・2・3キー）</li>
+    </ol>
+    <h3>練習できる計算</h3>
+    <p>掛け算・割り算・分数と百分率の変換・割合・全体×割合（実数）・増減率・増減後の値・前年値や全体の逆算・倍率・分数の大小比較・割合の割合</p>
+    <p class="small" style="margin-top:16px">記録はこの端末のブラウザ内にのみ保存され、外部には送信されません。<a href="https://github.com/oyuaki/webtest-quickcalc">ソースコード（GitHub）</a></p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const rand = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
+  const pick = a => a[rand(0,a.length-1)];
+  const round = (n,d=0) => { const k=10**d; return Math.round(n*k)/k; };
+  const sig = (n,s=3) => {
+    if(!n) return 0;
+    const d=s-1-Math.floor(Math.log10(Math.abs(n)));
+    return d>=0 ? round(n,d) : Math.round(n/10**-d)*10**-d;
+  };
+  const fmt = n => Number(n).toLocaleString('en-US',{maximumFractionDigits:3});
+  const spct = p => `${p>0?'+':p<0?'−':''}${fmt(Math.abs(p))}%`;
+  const pc = x => `${Math.round(x*100)}%`;
+  const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const nonZero = (lo,hi,min,div=1) => { let v; do{ v=rand(lo,hi)/div; }while(Math.abs(v)<min); return v; };
+
+  // sec = 標準レベルでの目安秒数
+  const CATS = {
+    mul:{name:'掛け算',sec:8}, div:{name:'割り算',sec:8}, frac:{name:'分数↔%',sec:3},
+    pct:{name:'割合（÷）',sec:10}, part:{name:'全体×割合',sec:10}, growth:{name:'増減率',sec:12},
+    apply:{name:'増減後の値',sec:10}, reverse:{name:'元の値の逆算',sec:15}, ratio:{name:'倍率',sec:10},
+    compare:{name:'大小比較',sec:15}, nest:{name:'割合の割合',sec:10}
+  };
+  const LEVEL_FACTOR = [0, .75, 1, 1.4];
+
+  const FRACS = [
+    ['1/2',50,1],['1/4',25,1],['3/4',75,1],['1/5',20,1],['2/5',40,1],['3/5',60,1],['4/5',80,1],
+    ['1/8',12.5,1],['1/10',10,1],['1/20',5,1],['1/3',33.3,1],['2/3',66.7,1],
+    ['1/6',16.7,2],['5/6',83.3,2],['3/8',37.5,2],['5/8',62.5,2],['7/8',87.5,2],['1/7',14.3,2],
+    ['1/9',11.1,2],['1/12',8.3,2],['1/16',6.25,2],['1/25',4,2],['1/40',2.5,2],
+    ['2/7',28.6,3],['3/7',42.9,3],['4/7',57.1,3],['2/9',22.2,3],['4/9',44.4,3],['1/11',9.1,3],
+    ['5/12',41.7,3],['7/12',58.3,3],['1/15',6.7,3],['3/16',18.75,3]
+  ];
+  const RECIP = [
+    ['1.25','0.8',1],['0.8','1.25',1],['1.6','0.625',1],['1.2','0.833'],['1.5','0.667'],['0.6','1.667'],
+    ['0.75','1.333'],['1.1','0.909'],['0.9','1.111'],['1.4','0.714']
+  ];
+
+  // 各ジェネレータは {p:問題, a:答え, s:補足(許容範囲など)} を返す
+  const GEN = {
+    mul(L){
+      let a,b;
+      if(L===1){ a=rand(12,29); b=rand(3,9); }
+      else if(L===2){
+        const t=rand(0,3);
+        if(t<2){ a=pick([12,15,16,18,24,25,35,45,48,75,125]); b=rand(3,16); }
+        else if(t===2){ a=rand(12,99); b=11; }
+        else { a=rand(12,19); b=rand(12,19); }
+      } else {
+        const t=rand(0,2);
+        if(t===0){
+          a=rand(12,99); b=rand(12,99);
+          return {p:`${a} × ${b} ≈ ?`, a:`約 ${fmt(sig(a*b,2))}`, s:`正確値 ${fmt(a*b)}　±5%以内なら○`};
+        }
+        else if(t===1){ a=rand(101,999); b=rand(3,9); }
+        else { a=rand(12,96)*10; b=pick([0.15,0.35,0.45,0.65,0.85,1.5,2.5,0.125]); }
+      }
+      if(Number.isInteger(b) && Math.random()<.5) [a,b]=[b,a];
+      return {p:`${fmt(a)} × ${fmt(b)}`, a:fmt(round(a*b,3))};
+    },
+    div(L){
+      if(L===1){ const b=rand(3,9), q=rand(12,40); return {p:`${b*q} ÷ ${b}`, a:fmt(q)}; }
+      // 暗算で割り切るのは「÷25=×4÷100」のようなコツが使える数だけ。それ以外は概算で答える
+      if(L===2 && Math.random()<.5){ const b=pick([5,15,25,50,75,125]), q=rand(4,40); return {p:`${fmt(b*q)} ÷ ${b}`, a:fmt(q)}; }
+      if(L===3 && Math.random()<.5){
+        const [d,num,den]=pick([[0.8,4,5],[1.25,5,4],[0.4,2,5],[2.5,5,2],[0.25,1,4],[1.5,3,2],[0.75,3,4],[1.2,6,5],[0.6,3,5],[0.125,1,8]]);
+        const k=rand(3,40);
+        return {p:`${fmt(k*num)} ÷ ${d}`, a:fmt(k*den)};
+      }
+      const b=rand(12,89), a=L===2?rand(150,990):rand(1200,9800), ex=a/b;
+      return {p:`${fmt(a)} ÷ ${b} ≈ ?`, a:`約 ${fmt(sig(ex,2))}`, s:`正確値 ${fmt(round(ex,1))}　±5%以内なら○`};
+    },
+    frac(L){
+      if(L===3 && Math.random()<.3){ const [d,r,exact]=pick(RECIP); return {p:`1 ÷ ${d}`, a:`${exact?'':'≈ '}${r}`}; }
+      const [f,p]=pick(FRACS.filter(x=>x[2]<=L));
+      const [n,d]=f.split('/').map(Number);
+      const approx=Math.abs(n/d*100-p)>1e-9 ? '≈ ' : '';
+      if(Math.random()<.5) return {p:`${f} = 何%？`, a:`${approx}${p}%`};
+      return {p:`${approx}${p}% = 分数で？`, a:f};
+    },
+    pct(L){
+      if(L===1){
+        const den=rand(2,9)*100, r=pick([10,20,25,30,40,50,60,75,80]);
+        return {p:`${fmt(den*r/100)} は ${fmt(den)} の何%？`, a:`${r}%`};
+      }
+      const den=L===2?rand(150,990):rand(1200,9800);
+      const num=Math.round(den*rand(8,95)/100*(1+(Math.random()-.5)*.04));
+      const ex=num/den*100;
+      return {p:`${fmt(num)} は ${fmt(den)} の約何%？`, a:`約 ${Math.round(ex)}%`, s:`正確値 ${ex.toFixed(1)}%　±2pt以内なら○`};
+    },
+    part(L){
+      if(L===1){
+        const w=rand(2,9)*pick([100,1000]), p=pick([10,20,25,30,40,50,75]);
+        return {p:`${fmt(w)} の ${p}% は？`, a:fmt(w*p/100)};
+      }
+      const unit=L===3?pick(['万人','億円','千台','百万円','t']):'';
+      const w=L===2?rand(120,980)*10:rand(1200,9800);
+      const p=L===2?rand(11,89):rand(51,899)/10;
+      const ex=w*p/100;
+      return {p:`${fmt(w)}${unit} の ${fmt(p)}% は約？`, a:`約 ${fmt(sig(ex,3))}${unit}`, s:`正確値 ${fmt(round(ex,1))}　±3%以内なら○`};
+    },
+    growth(L){
+      if(L===1){
+        const o=rand(2,9)*100, p=pick([10,20,25,30,40,50,-10,-20,-25,-40,-50]);
+        return {p:`${fmt(o)} → ${fmt(o*(100+p)/100)}\n増減率は？`, a:spct(p)};
+      }
+      const o=L===2?rand(150,900):rand(1200,9800);
+      const p=L===2?nonZero(-40,60,3):nonZero(-250,350,1,10);
+      const n=Math.round(o*(100+p)/100+(L===2?rand(-3,3):0));
+      const ex=(n-o)/o*100;
+      const prompt=`${fmt(o)} → ${fmt(n)}\n増減率は？`;
+      if(L===2) return {p:prompt, a:`約 ${spct(Math.round(ex))}`, s:`正確値 ${spct(round(ex,1))}　±1pt以内なら○`};
+      return {p:prompt, a:`約 ${spct(round(ex,1))}`, s:`±0.5pt以内なら○`};
+    },
+    apply(L){
+      const up=Math.random()<.5;
+      let b,p;
+      if(L===1){ b=rand(2,9)*100; p=pick([10,20,25,50]); }
+      else if(L===2){ b=rand(12,98)*10; p=pick([5,8,12,15,18,22,35,45]); }
+      else { b=rand(1200,9800); p=rand(11,299)/10; }
+      const ex=b*(100+(up?p:-p))/100;
+      const prompt=`${fmt(b)} の ${fmt(p)}% ${up?'増':'減'}は？`;
+      if(L<3) return {p:prompt, a:fmt(round(ex,2))};
+      return {p:prompt, a:`約 ${fmt(sig(ex,3))}`, s:`正確値 ${fmt(round(ex,1))}　±1%以内なら○`};
+    },
+    reverse(L){
+      if(Math.random()<.5){
+        let o,p;
+        if(L===1){ o=rand(2,9)*100; p=pick([25,50,20,100,-20,-25,-50]); }
+        else if(L===2){ o=rand(12,98)*10; p=pick([10,12,15,20,25,30,40,-10,-15,-20,-30]); }
+        else { o=rand(1200,9800); p=nonZero(-250,350,1,10); }
+        const now=Math.round(o*(100+p)/100), ex=now/(1+p/100);
+        const prompt=`前年比 ${spct(p)} で ${fmt(now)}\n前年は？`;
+        if(L===1 || Math.abs(ex-Math.round(ex))<1e-6) return {p:prompt, a:fmt(Math.round(ex))};
+        return {p:prompt, a:`約 ${fmt(sig(ex,3))}`, s:`正確値 ${fmt(round(ex,1))}　±2%以内なら○`};
+      }
+      if(L===1){
+        const w=rand(2,9)*pick([100,1000]), p=pick([10,20,25,40,50,75]);
+        return {p:`${fmt(w*p/100)} が全体の ${p}%\n全体は？`, a:fmt(w)};
+      }
+      const w=L===2?rand(12,98)*10:rand(1200,9800);
+      const p=L===2?rand(12,64):rand(51,649)/10;
+      const part=Math.round(w*p/100), ex=part/(p/100);
+      if(Math.abs(ex-Math.round(ex))<1e-6) return {p:`${fmt(part)} が全体の ${fmt(p)}%\n全体は？`, a:fmt(Math.round(ex))};
+      return {p:`${fmt(part)} が全体の ${fmt(p)}%\n全体は？`, a:`約 ${fmt(sig(ex,3))}`, s:`正確値 ${fmt(round(ex,1))}　±2%以内なら○`};
+    },
+    ratio(L){
+      if(L===1){
+        const b=rand(4,40)*20, m=pick([1.25,1.5,2,2.5,3,4,0.5,0.75]);
+        return {p:`${fmt(b*m)} は ${fmt(b)} の何倍？`, a:`${fmt(m)}倍`};
+      }
+      const b=L===2?rand(120,900):rand(1200,9800);
+      const a=Math.round(b*rand(L===2?30:20,L===2?400:350)/100), ex=a/b;
+      const prompt=`${fmt(a)} は ${fmt(b)} の約何倍？`;
+      if(L===2) return {p:prompt, a:`約 ${ex.toFixed(1)}倍`, s:`正確値 ${ex.toFixed(2)}倍　小数第1位が合えば○`};
+      return {p:prompt, a:`約 ${ex.toFixed(2)}倍`, s:`±0.02以内なら○`};
+    },
+    compare(L){
+      const [lo,hi]=L===1?[40,99]:L===2?[150,990]:[1200,9800];
+      const [dmin,dmax]=L===1?[5,10]:L===2?[2,5]:[0.8,2.5];
+      for(let i=0;i<100;i++){
+        const r1=rand(15,85), diff=dmin+Math.random()*(dmax-dmin), r2=r1+(Math.random()<.5?diff:-diff);
+        const b=rand(lo,hi), d=rand(lo,hi), a=Math.round(b*r1/100), c=Math.round(d*r2/100);
+        const x=a/b*100, y=c/d*100;
+        if(a<=0 || c<=0 || Math.abs(x-y)<dmin*.6) continue;
+        return {p:`どちらが大きい？\n${fmt(a)}/${fmt(b)}　vs　${fmt(c)}/${fmt(d)}`, a:x>y?'左':'右', s:`左 ${x.toFixed(1)}%　右 ${y.toFixed(1)}%`};
+      }
+      return GEN.pct(L);
+    },
+    nest(L){
+      if(L===1){
+        const p1=pick([20,25,40,50,60,80]), p2=pick([10,20,25,50]);
+        return {p:`全体の ${p1}% が A\nA のうち ${p2}% が B\nB は全体の何%？`, a:`${fmt(p1*p2/100)}%`};
+      }
+      const p1=rand(12,88), p2=rand(12,88);
+      if(L===2) return {p:`全体の ${p1}% が A\nA のうち ${p2}% が B\nB は全体の何%？`, a:`${fmt(p1*p2/100)}%`, s:`±1pt以内なら○`};
+      const total=rand(12,98)*100, ex=total*p1*p2/10000;
+      return {p:`全体 ${fmt(total)}人\nうち ${p1}% が A、A の ${p2}% が B\nB は約何人？`, a:`約 ${fmt(sig(ex,3))}人`, s:`正確値 ${fmt(round(ex,1))}　±3%以内なら○`};
+    }
+  };
+
+  // ---- 保存 ----
+  const KEY='calc-trainer-v2';
+  const DEFAULT_SETTINGS={cats:Object.keys(CATS), level:'2', target:'auto', setSize:'20', weak:true, auto:true};
+  let db;
+  try{ db=JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ db={}; }
+  db={records:[], sessions:[], review:[], ...db};
+  db.settings={...DEFAULT_SETTINGS, ...(db.settings||{})};
+  const save=()=>{ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} };
+
+  // ---- 設定UI ----
+  const chips=$('catChips');
+  Object.entries(CATS).forEach(([key,c])=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='chip'; b.dataset.cat=key; b.textContent=c.name;
+    b.setAttribute('aria-pressed', db.settings.cats.includes(key));
+    b.addEventListener('click',()=>{ b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')!=='true'); readSettings(); });
+    chips.appendChild(b);
+  });
+  const setAllChips=on=>{ chips.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed',on)); readSettings(); };
+  $('allCats').addEventListener('click',()=>setAllChips(true));
+  $('noCats').addEventListener('click',()=>setAllChips(false));
+  $('level').value=db.settings.level; $('target').value=db.settings.target; $('setSize').value=db.settings.setSize;
+  $('weakFirst').checked=db.settings.weak; $('autoReveal').checked=db.settings.auto;
+  ['level','target','setSize','weakFirst','autoReveal'].forEach(id=>$(id).addEventListener('change',readSettings));
+
+  function readSettings(){
+    db.settings={
+      cats:[...chips.querySelectorAll('.chip[aria-pressed="true"]')].map(b=>b.dataset.cat),
+      level:$('level').value, target:$('target').value, setSize:$('setSize').value,
+      weak:$('weakFirst').checked, auto:$('autoReveal').checked
+    };
+    save();
+  }
+
+  function targetFor(cat, level){
+    const t=db.settings.target;
+    if(t==='auto') return Math.max(2, Math.round(CATS[cat].sec*LEVEL_FACTOR[level]));
+    return Number(t);
+  }
+
+  // ---- 統計 ----
+  function summarize(rs){
+    const n=rs.length;
+    if(!n) return {n:0};
+    const cnt=g=>rs.filter(r=>r.g===g).length;
+    const timed=rs.filter(r=>r.tg>0);
+    return {
+      n, ok:cnt('ok')/n, memo:cnt('memo')/n, ng:cnt('ng')/n,
+      avg:rs.reduce((s,r)=>s+r.t,0)/n,
+      avgTg:timed.length ? timed.reduce((s,r)=>s+r.tg,0)/timed.length : 0,
+      within:rs.filter(r=>!r.o).length/n,
+      slowRatio:timed.length ? timed.reduce((s,r)=>s+r.t/r.tg,0)/timed.length : 1
+    };
+  }
+  function catStats(cat){
+    const all=db.records.filter(r=>r.c===cat);
+    const s=summarize(all.slice(-30));
+    s.total=all.length;
+    if(s.n) s.score=s.ng*2+s.memo+(1-s.within)+Math.max(0,s.slowRatio-1);
+    return s;
+  }
+
+  function chooseCat(){
+    const cats=db.settings.cats.length ? db.settings.cats : Object.keys(CATS);
+    if(!db.settings.weak) return pick(cats);
+    const weights=cats.map(c=>{ const s=catStats(c); return s.n<3 ? 2 : 1+3*s.score; });
+    let x=Math.random()*weights.reduce((a,b)=>a+b,0);
+    for(let i=0;i<cats.length;i++){ x-=weights[i]; if(x<=0) return cats[i]; }
+    return cats[cats.length-1];
+  }
+
+  function generate(){
+    const level=Number(db.settings.level);
+    let q, guard=0;
+    do{
+      const c=chooseCat();
+      q={c, l:level, ...GEN[c](level)};
+    }while(S.last && q.p===S.last && guard++<10);
+    return q;
+  }
+
+  // ---- セッション ----
+  let S=null;
+
+  function start(review){
+    if(review && !db.review.length) return;
+    const setSize=db.settings.setSize;
+    const sprint=setSize.startsWith('s');
+    S={
+      review, items:[], last:null, phase:'think',
+      total: review ? db.review.length : sprint ? 0 : Number(setSize),
+      endAt: !review && sprint ? Date.now()+Number(setSize.slice(1))*1000 : 0,
+      queue: review ? db.review.map(q=>({...q})) : null
+    };
+    $('setup').hidden=true; $('summary').hidden=true; $('play').hidden=false;
+    clearInterval(S.timer); S.timer=setInterval(tick,100);
+    next();
+  }
+
+  function sessionDone(){
+    if(S.review) return !S.queue.length;
+    if(S.total && S.items.length>=S.total) return true;
+    return S.endAt && Date.now()>=S.endAt;
+  }
+
+  function next(){
+    if(sessionDone()) return finishSession();
+    const q=S.review ? S.queue.shift() : generate();
+    q.tg=targetFor(q.c, q.l);
+    S.q=q; S.last=q.p; S.phase='think'; S.qStart=performance.now();
+    $('catLabel').textContent=`${CATS[q.c].name}${q.tg?` ・ 目安 ${q.tg}秒`:''}`;
+    $('question').textContent=q.p;
+    $('question').classList.toggle('long', q.p.split('\n').length>2 || q.p.length>24);
+    $('answer').textContent=q.a;
+    $('answerSub').innerHTML=esc(q.s||'');
+    $('answerBox').classList.remove('show');
+    $('thinkActions').hidden=false; $('gradeActions').hidden=true;
+    $('timeBarWrap').hidden=!q.tg;
+    document.activeElement && document.activeElement.blur();
+    tick();
+  }
+
+  function tick(){
+    if(!S) return;
+    if(S.phase==='think'){
+      const el=(performance.now()-S.qStart)/1000, tg=S.q.tg;
+      $('timerLabel').textContent=`${el.toFixed(1)}秒`;
+      if(tg){
+        const r=el/tg;
+        $('timeBar').style.width=`${Math.min(1,r)*100}%`;
+        $('timeBarWrap').classList.toggle('warn', r>=.7 && r<1);
+        $('timeBarWrap').classList.toggle('over', r>=1);
+        if(r>=1 && db.settings.auto) reveal();
+      }
+    }
+    const done=S.items.length;
+    if(S.review) $('progress').textContent=`復習 ${done+1} / ${S.total}`;
+    else if(S.endAt){
+      const left=Math.max(0,Math.ceil((S.endAt-Date.now())/1000));
+      $('progress').textContent=`残り ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')} ・ ${done}問`;
+    }
+    else $('progress').textContent=S.total ? `${done+1} / ${S.total}` : `${done+1}問目`;
+  }
+
+  function reveal(){
+    if(!S || S.phase!=='think') return;
+    S.phase='grade';
+    S.think=(performance.now()-S.qStart)/1000;
+    S.over=S.q.tg>0 && S.think>S.q.tg;
+    $('timerLabel').textContent=`${S.think.toFixed(1)}秒`;
+    if(S.over) $('answerSub').innerHTML=esc(S.q.s||'')+'<span class="badge">目安超過</span>';
+    $('answerBox').classList.add('show');
+    $('thinkActions').hidden=true; $('gradeActions').hidden=false;
+    document.activeElement && document.activeElement.blur();
+  }
+
+  function grade(g){
+    if(!S || S.phase!=='grade') return;
+    const q=S.q;
+    const rec={c:q.c, l:q.l, g, t:round(S.think,1), tg:q.tg, o:S.over, p:q.p, a:q.a, s:q.s||'', ts:Date.now()};
+    db.records.push(rec);
+    if(db.records.length>3000) db.records.splice(0, db.records.length-3000);
+    const idx=db.review.findIndex(r=>r.p===q.p);
+    if(g!=='ok' || S.over){
+      if(idx<0) db.review.push({c:q.c, l:q.l, p:q.p, a:q.a, s:q.s||''});
+      if(db.review.length>60) db.review.shift();
+    } else if(idx>=0) db.review.splice(idx,1);
+    save();
+    S.items.push(rec);
+    renderStats();
+    next();
+  }
+
+  function finishSession(){
+    if(!S) return;
+    clearInterval(S.timer);
+    const items=S.items, wasReview=S.review;
+    S=null;
+    $('play').hidden=true; $('setup').hidden=false;
+    if(items.length){
+      const s=summarize(items);
+      db.sessions.push({ts:Date.now(), n:s.n, ok:s.ok, memo:s.memo, ng:s.ng, avg:s.avg, within:s.within, review:wasReview});
+      if(db.sessions.length>100) db.sessions.shift();
+      save();
+      renderSummary(items, s, wasReview);
+    }
+    renderStats();
+  }
+
+  function renderSummary(items, s, wasReview){
+    const slow=items.filter(r=>r.tg>0).sort((a,b)=>b.t/b.tg-a.t/a.tg).slice(0,3);
+    const byCat=Object.keys(CATS).map(c=>({c, ...summarize(items.filter(r=>r.c===c))})).filter(x=>x.n)
+      .sort((a,b)=>b.slowRatio-a.slowRatio);
+    $('summary').innerHTML=`
+      <div class="row-head"><strong>${wasReview?'復習':'セット'}結果</strong><button class="link" id="closeSummary" type="button">閉じる</button></div>
+      <div class="stats">
+        <div class="stat"><span class="small">問題数</span><b>${s.n}</b></div>
+        <div class="stat"><span class="small">○ 暗算正解</span><b>${pc(s.ok)}</b></div>
+        <div class="stat"><span class="small">△ 筆算 / × 不正解</span><b>${pc(s.memo)} / ${pc(s.ng)}</b></div>
+        <div class="stat"><span class="small">平均 ・ 目安内</span><b>${s.avg.toFixed(1)}秒 ・ ${pc(s.within)}</b></div>
+      </div>
+      ${byCat.length>1?`<p class="small" style="margin:12px 0 0">目安比が遅い順：${byCat.map(x=>`${CATS[x.c].name} ${x.avg.toFixed(1)}秒`).join(' ／ ')}</p>`:''}
+      ${slow.length?`<ul class="list" style="margin-top:8px">${slow.map(r=>`<li><span>${esc(r.p.replace(/\n/g,' '))} → ${esc(r.a)}</span><span>${r.t.toFixed(1)}秒 / ${r.tg}秒</span></li>`).join('')}</ul>`:''}
+      <div class="footer-actions">
+        <button class="primary" id="againBtn" type="button">同じ設定でもう1セット<kbd>Enter</kbd></button>
+      </div>`;
+    $('summary').hidden=false;
+    $('closeSummary').addEventListener('click',()=>{ $('summary').hidden=true; });
+    $('againBtn').addEventListener('click',()=>start(false));
+  }
+
+  // ---- 表示 ----
+  function renderStats(){
+    const s=summarize(db.records.slice(-100));
+    $('okStat').textContent=s.n?pc(s.ok):'-';
+    $('memoStat').textContent=s.n?pc(s.memo):'-';
+    $('avgStat').textContent=s.n?`${s.avg.toFixed(1)}秒`:'-';
+    $('withinStat').textContent=s.n?pc(s.within):'-';
+
+    const rows=Object.keys(CATS).map(c=>({c, ...catStats(c)}));
+    const weak=rows.filter(r=>r.n>=5 && r.score>.3).sort((a,b)=>b.score-a.score).slice(0,2).map(r=>r.c);
+    $('catBody').innerHTML=rows.map(r=>{
+      const name=CATS[r.c].name;
+      if(!r.n) return `<tr class="dim"><td>${name}</td><td>0</td><td colspan="5">-</td></tr>`;
+      const slow=r.avgTg && r.avg>r.avgTg;
+      return `<tr><td>${name}${weak.includes(r.c)?'<span class="tag">弱点</span>':''}</td><td>${r.total}</td>
+        <td>${pc(r.ok)}</td><td>${pc(r.memo)}</td><td>${pc(r.ng)}</td>
+        <td><span class="${slow?'slow':''}">${r.avg.toFixed(1)}</span> / ${r.avgTg?Math.round(r.avgTg):'-'}秒</td><td>${pc(r.within)}</td></tr>`;
+    }).join('');
+
+    const slowest=db.records.slice(-300).filter(r=>r.tg>0).sort((a,b)=>b.t/b.tg-a.t/a.tg).slice(0,6);
+    $('slowList').innerHTML=slowest.length
+      ? slowest.map(r=>`<li><span>${esc(r.p.replace(/\n/g,' '))} → ${esc(r.a)}</span><span>${r.t.toFixed(1)}秒 / ${r.tg}秒 ${{ok:'○',memo:'△',ng:'×'}[r.g]}</span></li>`).join('')
+      : '<li><span class="small">まだ記録がありません。</span></li>';
+
+    const sess=db.sessions.slice(-10).reverse();
+    $('sessionBody').innerHTML=sess.length
+      ? sess.map(x=>{
+          const d=new Date(x.ts);
+          const when=`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+          return `<tr><td>${when}${x.review?'<span class="tag">復習</span>':''}</td><td>${x.n}</td><td>${pc(x.ok)}</td><td>${x.avg.toFixed(1)}秒</td><td>${pc(x.within)}</td></tr>`;
+        }).join('')
+      : '<tr><td colspan="5" class="small">まだ記録がありません。</td></tr>';
+
+    $('reviewBtn').textContent=`ミス・遅い問題を復習（${db.review.length}）`;
+    $('reviewBtn').disabled=!db.review.length;
+  }
+
+  $('memoGrid').innerHTML=FRACS.map(([f,p])=>`<div>${f} = ${p}%</div>`).join('')
+    + RECIP.map(([d,r])=>`<div>1÷${d} = ${r}</div>`).join('');
+
+  // ---- 操作 ----
+  $('startBtn').addEventListener('click',()=>start(false));
+  $('reviewBtn').addEventListener('click',()=>start(true));
+  $('revealBtn').addEventListener('click',reveal);
+  $('gradeActions').querySelectorAll('.g').forEach(b=>b.addEventListener('click',()=>grade(b.dataset.g)));
+  $('endBtn').addEventListener('click',finishSession);
+  $('resetBtn').addEventListener('click',()=>{
+    if(!confirm('記録・復習リスト・セット履歴をすべて削除します。よろしいですか？')) return;
+    db.records=[]; db.sessions=[]; db.review=[]; save();
+    $('summary').hidden=true; renderStats();
+  });
+
+  document.addEventListener('keydown',e=>{
+    if(e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+    const tag=e.target.tagName;
+    if(S){
+      if(e.key==='Escape'){ e.preventDefault(); finishSession(); }
+      else if(S.phase==='think' && (e.key===' ' || e.key==='Enter')){ e.preventDefault(); reveal(); }
+      else if(S.phase==='grade'){
+        const g={'1':'ok','2':'memo','3':'ng'}[e.key];
+        if(g){ e.preventDefault(); grade(g); }
+      }
+    } else if(e.key==='Enter' && !['BUTTON','SELECT','INPUT'].includes(tag)){
+      e.preventDefault(); start(false);
+    }
+  });
+
+  renderStats();
+})();
+</script>
+</body>
+</html>

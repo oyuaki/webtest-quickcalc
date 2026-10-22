@@ -86,6 +86,8 @@
   .answer.show{visibility:visible}
   .answer .ans{font-size:34px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
   .answer .sub{font-size:14px;color:var(--muted);margin-top:4px}
+  .answer .hint{display:inline-block;margin-top:10px;padding:8px 12px;border-radius:10px;background:var(--accent2);font-size:15px;line-height:1.5;max-width:100%}
+  .answer .hint:empty{display:none}
   .answer .badge{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:var(--badbg);color:var(--bad);margin-left:6px}
   .actions{display:grid;gap:10px}
   .actions .big{min-height:60px;font-size:18px}
@@ -176,6 +178,7 @@
     <div class="opts">
       <label class="check"><input type="checkbox" id="weakFirst" checked> 苦手カテゴリを多めに出す</label>
       <label class="check"><input type="checkbox" id="autoReveal" checked> 目安を超えたら自動で答えを表示</label>
+      <label class="check"><input type="checkbox" id="showHint" checked> 答えと一緒に解き方を表示</label>
     </div>
     <div class="footer-actions">
       <button class="primary" id="startBtn" type="button">開始<kbd>Enter</kbd></button>
@@ -196,6 +199,7 @@
     <div class="answer" id="answerBox">
       <div class="ans" id="answer"></div>
       <div class="sub" id="answerSub"></div>
+      <div class="hint" id="answerHint"></div>
     </div>
     <div class="actions" id="thinkActions">
       <button class="primary big" id="revealBtn" type="button">答えを見る<kbd>Space</kbd></button>
@@ -312,96 +316,167 @@
     ['5/12',41.7,3],['7/12',58.3,3],['1/15',6.7,3],['3/16',18.75,3]
   ];
   const RECIP = [
-    ['1.25','0.8',1],['0.8','1.25',1],['1.6','0.625',1],['1.2','0.833'],['1.5','0.667'],['0.6','1.667'],
-    ['0.75','1.333'],['1.1','0.909'],['0.9','1.111'],['1.4','0.714']
+    ['1.25','0.8',1,'5/4'],['0.8','1.25',1,'4/5'],['1.6','0.625',1,'8/5'],['1.2','0.833',0,'6/5'],['1.5','0.667',0,'3/2'],['0.6','1.667',0,'3/5'],
+    ['0.75','1.333',0,'3/4'],['1.1','0.909',0,'11/10'],['0.9','1.111',0,'9/10'],['1.4','0.714',0,'7/5']
   ];
+  const FRAC_HINT = {
+    '1/4':'1/2の半分','1/8':'1/4の半分','1/16':'1/8の半分','1/6':'1/3の半分','1/12':'1/6の半分','1/40':'1/20の半分',
+    '1/3':'0.333…','1/7':'0.142857…','1/9':'0.111…','1/11':'0.0909…','1/15':'1/3 ÷ 5','1/20':'5/100','1/25':'4/100',
+    '5/12':'1/2 − 1/12 = 50 − 8.3','7/12':'1/2 + 1/12 = 50 + 8.3'
+  };
+  const MUL_TRICK = {
+    15:x=>`${x}×10 + その半分 = ${fmt(x*10)} + ${fmt(x*5)}`,
+    25:x=>`×25 = ×100÷4 → ${fmt(x*100)}÷4`,
+    35:x=>`${x}×30 + ${x}×5 = ${fmt(x*30)} + ${fmt(x*5)}`,
+    45:x=>`${x}×50 − ${x}×5 = ${fmt(x*50)} − ${fmt(x*5)}`,
+    75:x=>`×75 = ×100÷4×3 → ${fmt(x*25)}×3`,
+    125:x=>`×125 = ×1000÷8 → ${fmt(x*1000)}÷8`
+  };
+  const RECIP_M = {'2':'×0.5','1.5':'×2/3','1.25':'×0.8','1.2':'×5/6','0.8':'×1.25','0.75':'×4/3','0.5':'×2'};
+  const PART_INV = {10:'×10',20:'×5',25:'×4',40:'×2.5',50:'×2',75:'×4/3'};
+  const PCT_FRAC = {10:'1/10',20:'1/5',25:'1/4',50:'1/2'};
 
-  // 各ジェネレータは {p:問題, a:答え, s:補足(許容範囲など)} を返す
+  const gcd = (a,b) => b ? gcd(b,a%b) : a;
+  const reduce = (n,d) => { const g=gcd(n,d); return `${fmt(n/g)}/${fmt(d/g)}`; };
+  const fracVal = f => { const [n,d]=f.split('/').map(Number); return n/d; };
+  const invStr = f => { const [n,d]=f.split('/'); return n==='1' ? `×${d}` : `×${d}/${n}`; };
+  // pct に最も近い暗記分数（差が tol pt 以内かつ相対誤差 rel 以内）
+  const nearFrac = (pct, tol=1.5, rel=Infinity) => {
+    let best=null;
+    FRACS.forEach(x=>{ if(Math.abs(x[1]-pct)<=tol && Math.abs(x[1]-pct)<=pct*rel && (!best || Math.abs(x[1]-pct)<Math.abs(best[1]-pct))) best=x; });
+    return best;
+  };
+  // n×x を「切りのいい数 ± 端数」に分ける
+  const splitMul = (n,x) => {
+    const unit=n>=100?100:10, lo=Math.floor(n/unit)*unit, hi=lo+unit;
+    const base=hi-n<=unit*.3?hi:lo, d=n-base;
+    if(!d) return `${fmt(n)}×${fmt(x)}`;
+    const op=d>0?'+':'−';
+    return `${fmt(base)}×${fmt(x)} ${op} ${fmt(Math.abs(d))}×${fmt(x)} = ${fmt(base*x)} ${op} ${fmt(Math.abs(d)*x)}`;
+  };
+  const decMulHint = (a,b) => {
+    if(b===0.125) return `×0.125 = ÷8 → ${fmt(a)}÷8`;
+    if(b===1.5) return `${fmt(a)} + その半分 = ${fmt(a)} + ${fmt(a/2)}`;
+    if(b===2.5) return `×2.5 = ×10÷4 → ${fmt(a*10)}÷4`;
+    const a10=a/10, k=Math.floor(b*10);
+    return `${fmt(a10)}×${fmt(b*10)} = ${fmt(a10)}×${k} + ${fmt(a10)}÷2 = ${fmt(a10*k)} + ${fmt(a10/2)}`;
+  };
+  // a÷b の概算：「b×切りのいい数」を引いて残りを見る
+  const divHint = (a,b) => {
+    const ex=a/b, k=10**(Math.floor(Math.log10(ex))-(ex>=100?1:0));
+    const q0=round(Math.floor(ex/k)*k,3), rest=round(a-b*q0,2);
+    if(!rest) return `${fmt(b)}×${fmt(q0)} = ${fmt(a)}`;
+    return `${fmt(b)}×${fmt(q0)} = ${fmt(b*q0)}、残り${fmt(rest)}は${fmt(b)}の約${fmt(round(rest/b,k<1?2:1))}個分`;
+  };
+
+  // 各ジェネレータは {p:問題, a:答え, s:補足(許容範囲など), h:解き方} を返す
   const GEN = {
     mul(L){
-      let a,b;
-      if(L===1){ a=rand(12,29); b=rand(3,9); }
+      let a,b,h;
+      if(L===1){ a=rand(12,29); b=rand(3,9); h=splitMul(a,b); }
       else if(L===2){
         const t=rand(0,3);
-        if(t<2){ a=pick([12,15,16,18,24,25,35,45,48,75,125]); b=rand(3,16); }
-        else if(t===2){ a=rand(12,99); b=11; }
-        else { a=rand(12,19); b=rand(12,19); }
+        if(t<2){ a=pick([12,15,16,18,24,25,35,45,48,75,125]); b=rand(3,16); h=MUL_TRICK[a]?MUL_TRICK[a](b):splitMul(a,b); }
+        else if(t===2){ a=rand(12,99); b=11; h=`${a}×10 + ${a} = ${fmt(a*10)} + ${a}`; }
+        else { a=rand(12,19); b=rand(12,19); h=`(${a}+${b%10})×10 + ${a%10}×${b%10} = ${(a+b%10)*10} + ${(a%10)*(b%10)}`; }
       } else {
         const t=rand(0,2);
         if(t===0){
           a=rand(12,99); b=rand(12,99);
-          return {p:`${a} × ${b} ≈ ?`, a:`約 ${fmt(sig(a*b,2))}`, s:`正確値 ${fmt(a*b)}　±5%以内なら○`};
+          return {p:`${a} × ${b} ≈ ?`, a:`約 ${fmt(sig(a*b,2))}`, s:`正確値 ${fmt(a*b)}　±5%以内なら○`, h:splitMul(a,b)};
         }
-        else if(t===1){ a=rand(101,999); b=rand(3,9); }
-        else { a=rand(12,96)*10; b=pick([0.15,0.35,0.45,0.65,0.85,1.5,2.5,0.125]); }
+        else if(t===1){ a=rand(101,999); b=rand(3,9); h=splitMul(a,b); }
+        else { a=rand(12,96)*10; b=pick([0.15,0.35,0.45,0.65,0.85,1.5,2.5,0.125]); h=decMulHint(a,b); }
       }
       if(Number.isInteger(b) && Math.random()<.5) [a,b]=[b,a];
-      return {p:`${fmt(a)} × ${fmt(b)}`, a:fmt(round(a*b,3))};
+      return {p:`${fmt(a)} × ${fmt(b)}`, a:fmt(round(a*b,3)), h};
     },
     div(L){
-      if(L===1){ const b=rand(3,9), q=rand(12,40); return {p:`${b*q} ÷ ${b}`, a:fmt(q)}; }
+      if(L===1){
+        const b=rand(3,9), q=rand(12,40), q1=Math.floor(q/10)*10, r=q-q1;
+        return {p:`${b*q} ÷ ${b}`, a:fmt(q), h:r?`${q1*b}÷${b} + ${r*b}÷${b} = ${q1} + ${r}`:`${q1*b}÷${b}`};
+      }
       // 暗算で割り切るのは「÷25=×4÷100」のようなコツが使える数だけ。それ以外は概算で答える
-      if(L===2 && Math.random()<.5){ const b=pick([5,15,25,50,75,125]), q=rand(4,40); return {p:`${fmt(b*q)} ÷ ${b}`, a:fmt(q)}; }
+      if(L===2 && Math.random()<.5){
+        const b=pick([5,15,25,50,75,125]), q=rand(4,40), m={5:2,15:2,25:4,50:2,75:4,125:8}[b];
+        return {p:`${fmt(b*q)} ÷ ${b}`, a:fmt(q), h:`両方×${m} → ${fmt(b*q*m)} ÷ ${b*m}`};
+      }
       if(L===3 && Math.random()<.5){
         const [d,num,den]=pick([[0.8,4,5],[1.25,5,4],[0.4,2,5],[2.5,5,2],[0.25,1,4],[1.5,3,2],[0.75,3,4],[1.2,6,5],[0.6,3,5],[0.125,1,8]]);
-        const k=rand(3,40);
-        return {p:`${fmt(k*num)} ÷ ${d}`, a:fmt(k*den)};
+        const k=rand(3,40), a=k*num;
+        return {p:`${fmt(a)} ÷ ${d}`, a:fmt(k*den), h:num===1?`÷${d} = ×${den}`:`÷${d} = ×${den}÷${num} → ${fmt(a*den)}÷${num}`};
       }
       const b=rand(12,89), a=L===2?rand(150,990):rand(1200,9800), ex=a/b;
-      return {p:`${fmt(a)} ÷ ${b} ≈ ?`, a:`約 ${fmt(sig(ex,2))}`, s:`正確値 ${fmt(round(ex,1))}　±5%以内なら○`};
+      return {p:`${fmt(a)} ÷ ${b} ≈ ?`, a:`約 ${fmt(sig(ex,2))}`, s:`正確値 ${fmt(round(ex,1))}　±5%以内なら○`, h:divHint(a,b)};
     },
     frac(L){
-      if(L===3 && Math.random()<.3){ const [d,r,exact]=pick(RECIP); return {p:`1 ÷ ${d}`, a:`${exact?'':'≈ '}${r}`}; }
+      if(L===3 && Math.random()<.3){
+        const [d,r,exact,f]=pick(RECIP);
+        return {p:`1 ÷ ${d}`, a:`${exact?'':'≈ '}${r}`, h:`${d} = ${f} → 逆数は ${f.split('/').reverse().join('/')}`};
+      }
       const [f,p]=pick(FRACS.filter(x=>x[2]<=L));
       const [n,d]=f.split('/').map(Number);
       const approx=Math.abs(n/d*100-p)>1e-9 ? '≈ ' : '';
-      if(Math.random()<.5) return {p:`${f} = 何%？`, a:`${approx}${p}%`};
-      return {p:`${approx}${p}% = 分数で？`, a:f};
+      let h=FRAC_HINT[f]||'';
+      if(!h && n>1){
+        const p1=FRACS.find(x=>x[0]===`1/${d}`)[1];
+        h=n===d-1 ? `1 − 1/${d} = 100 − ${p1}` : `1/${d} = ${p1}% の${n}倍`;
+      }
+      if(Math.random()<.5) return {p:`${f} = 何%？`, a:`${approx}${p}%`, h};
+      return {p:`${approx}${p}% = 分数で？`, a:f, h};
     },
     pct(L){
       if(L===1){
-        const den=rand(2,9)*100, r=pick([10,20,25,30,40,50,60,75,80]);
-        return {p:`${fmt(den*r/100)} は ${fmt(den)} の何%？`, a:`${r}%`};
+        const den=rand(2,9)*100, r=pick([10,20,25,30,40,50,60,75,80]), num=den*r/100;
+        return {p:`${fmt(num)} は ${fmt(den)} の何%？`, a:`${r}%`, h:`${fmt(num)}/${fmt(den)} = ${reduce(num,den)}`};
       }
       const den=L===2?rand(150,990):rand(1200,9800);
       const num=Math.round(den*rand(8,95)/100*(1+(Math.random()-.5)*.04));
-      const ex=num/den*100;
-      return {p:`${fmt(num)} は ${fmt(den)} の約何%？`, a:`約 ${Math.round(ex)}%`, s:`正確値 ${ex.toFixed(1)}%　±2pt以内なら○`};
+      const ex=num/den*100, r=Math.round(ex), nf=nearFrac(ex);
+      const h=[nf?`${nf[0]}（${nf[1]}%）に近い`:'', `選択肢から逆算：${fmt(den)}×${r}% = ${fmt(round(den*r/100))}`].filter(Boolean).join(' ／ ');
+      return {p:`${fmt(num)} は ${fmt(den)} の約何%？`, a:`約 ${r}%`, s:`正確値 ${ex.toFixed(1)}%　±2pt以内なら○`, h};
     },
     part(L){
       if(L===1){
         const w=rand(2,9)*pick([100,1000]), p=pick([10,20,25,30,40,50,75]);
-        return {p:`${fmt(w)} の ${p}% は？`, a:fmt(w*p/100)};
+        const h={10:`${fmt(w)}÷10`,20:`10% = ${fmt(w/10)} → ×2`,25:`${fmt(w)}÷4`,30:`10% = ${fmt(w/10)} → ×3`,
+          40:`10% = ${fmt(w/10)} → ×4`,50:`${fmt(w)}÷2`,75:`${fmt(w)}÷4×3 = ${fmt(w/4)}×3`}[p];
+        return {p:`${fmt(w)} の ${p}% は？`, a:fmt(w*p/100), h};
       }
       const unit=L===3?pick(['万人','億円','千台','百万円','t']):'';
       const w=L===2?rand(120,980)*10:rand(1200,9800);
       const p=L===2?rand(11,89):rand(51,899)/10;
-      const ex=w*p/100;
-      return {p:`${fmt(w)}${unit} の ${fmt(p)}% は約？`, a:`約 ${fmt(sig(ex,3))}${unit}`, s:`正確値 ${fmt(round(ex,1))}　±3%以内なら○`};
+      const ex=w*p/100, nf=nearFrac(p,1.5,.02), pr=Math.round(p);
+      const h=nf ? `${fmt(p)}% ≈ ${nf[0]} → ${fmt(w)}×${nf[0]} ≈ ${fmt(sig(w*fracVal(nf[0]),3))}`
+        : `10% = ${fmt(round(w/10,1))} → ×${fmt(pr/10)}${pr!==p?`（${fmt(p)}% ≈ ${pr}%）`:''}`;
+      return {p:`${fmt(w)}${unit} の ${fmt(p)}% は約？`, a:`約 ${fmt(sig(ex,3))}${unit}`, s:`正確値 ${fmt(round(ex,1))}　±3%以内なら○`, h};
     },
     growth(L){
       if(L===1){
-        const o=rand(2,9)*100, p=pick([10,20,25,30,40,50,-10,-20,-25,-40,-50]);
-        return {p:`${fmt(o)} → ${fmt(o*(100+p)/100)}\n増減率は？`, a:spct(p)};
+        const o=rand(2,9)*100, p=pick([10,20,25,30,40,50,-10,-20,-25,-40,-50]), n=o*(100+p)/100, d=Math.abs(n-o);
+        return {p:`${fmt(o)} → ${fmt(n)}\n増減率は？`, a:spct(p), h:`差 ${fmt(d)} ÷ 元 ${fmt(o)} = ${reduce(d,o)}`};
       }
       const o=L===2?rand(150,900):rand(1200,9800);
       const p=L===2?nonZero(-40,60,3):nonZero(-250,350,1,10);
       const n=Math.round(o*(100+p)/100+(L===2?rand(-3,3):0));
-      const ex=(n-o)/o*100;
+      const ex=(n-o)/o*100, d=n-o, nf=nearFrac(Math.abs(ex));
       const prompt=`${fmt(o)} → ${fmt(n)}\n増減率は？`;
-      if(L===2) return {p:prompt, a:`約 ${spct(Math.round(ex))}`, s:`正確値 ${spct(round(ex,1))}　±1pt以内なら○`};
-      return {p:prompt, a:`約 ${spct(round(ex,1))}`, s:`±0.5pt以内なら○`};
+      const h=`差 ${d>0?'+':'−'}${fmt(Math.abs(d))} ÷ 元 ${fmt(o)}`+(nf?` ≈ ${nf[0]}（${nf[1]}%）`:`（元の10% = ${fmt(round(o/10,1))}）`);
+      if(L===2) return {p:prompt, a:`約 ${spct(Math.round(ex))}`, s:`正確値 ${spct(round(ex,1))}　±1pt以内なら○`, h};
+      return {p:prompt, a:`約 ${spct(round(ex,1))}`, s:`±0.5pt以内なら○`, h};
     },
     apply(L){
-      const up=Math.random()<.5;
+      const up=Math.random()<.5, op=up?'+':'−';
       let b,p;
       if(L===1){ b=rand(2,9)*100; p=pick([10,20,25,50]); }
       else if(L===2){ b=rand(12,98)*10; p=pick([5,8,12,15,18,22,35,45]); }
       else { b=rand(1200,9800); p=rand(11,299)/10; }
-      const ex=b*(100+(up?p:-p))/100;
+      const ex=b*(100+(up?p:-p))/100, v=b*p/100;
       const prompt=`${fmt(b)} の ${fmt(p)}% ${up?'増':'減'}は？`;
-      if(L<3) return {p:prompt, a:fmt(round(ex,2))};
-      return {p:prompt, a:`約 ${fmt(sig(ex,3))}`, s:`正確値 ${fmt(round(ex,1))}　±1%以内なら○`};
+      if(L===1) return {p:prompt, a:fmt(round(ex,2)), h:`${p}% = ${fmt(v)} → ${fmt(b)} ${op} ${fmt(v)}`};
+      if(L===2) return {p:prompt, a:fmt(round(ex,2)), h:`10% = ${fmt(b/10)} → ${p}% = ${fmt(v)} → ${fmt(b)} ${op} ${fmt(v)}`};
+      return {p:prompt, a:`約 ${fmt(sig(ex,3))}`, s:`正確値 ${fmt(round(ex,1))}　±1%以内なら○`,
+        h:`10% = ${fmt(round(b/10,1))} → ${fmt(p)}% ≈ ${fmt(sig(v,2))} → ${fmt(b)} ${op} ${fmt(sig(v,2))}`};
     },
     reverse(L){
       if(Math.random()<.5){
@@ -410,30 +485,36 @@
         else if(L===2){ o=rand(12,98)*10; p=pick([10,12,15,20,25,30,40,-10,-15,-20,-30]); }
         else { o=rand(1200,9800); p=nonZero(-250,350,1,10); }
         const now=Math.round(o*(100+p)/100), ex=now/(1+p/100);
+        const ms=fmt(round(1+p/100,3));
+        let h=`前年×${ms} = ${fmt(now)} → ${fmt(now)}÷${ms}`;
+        if(RECIP_M[ms]) h+=` = ${fmt(now)}${RECIP_M[ms]}`;
+        else if(Math.abs(p)<=10) h+=` ≈ ${fmt(now)}×${fmt(round(1-p/100,3))}（小さい%なら近似でOK）`;
         const prompt=`前年比 ${spct(p)} で ${fmt(now)}\n前年は？`;
-        if(L===1 || Math.abs(ex-Math.round(ex))<1e-6) return {p:prompt, a:fmt(Math.round(ex))};
-        return {p:prompt, a:`約 ${fmt(sig(ex,3))}`, s:`正確値 ${fmt(round(ex,1))}　±2%以内なら○`};
+        if(L===1 || Math.abs(ex-Math.round(ex))<1e-6) return {p:prompt, a:fmt(Math.round(ex)), h};
+        return {p:prompt, a:`約 ${fmt(sig(ex,3))}`, s:`正確値 ${fmt(round(ex,1))}　±2%以内なら○`, h};
       }
       if(L===1){
-        const w=rand(2,9)*pick([100,1000]), p=pick([10,20,25,40,50,75]);
-        return {p:`${fmt(w*p/100)} が全体の ${p}%\n全体は？`, a:fmt(w)};
+        const w=rand(2,9)*pick([100,1000]), p=pick([10,20,25,40,50,75]), part=w*p/100;
+        return {p:`${fmt(part)} が全体の ${p}%\n全体は？`, a:fmt(w), h:`全体 = ${fmt(part)}÷${p/100} = ${fmt(part)}${PART_INV[p]}`};
       }
       const w=L===2?rand(12,98)*10:rand(1200,9800);
       const p=L===2?rand(12,64):rand(51,649)/10;
-      const part=Math.round(w*p/100), ex=part/(p/100);
-      if(Math.abs(ex-Math.round(ex))<1e-6) return {p:`${fmt(part)} が全体の ${fmt(p)}%\n全体は？`, a:fmt(Math.round(ex))};
-      return {p:`${fmt(part)} が全体の ${fmt(p)}%\n全体は？`, a:`約 ${fmt(sig(ex,3))}`, s:`正確値 ${fmt(round(ex,1))}　±2%以内なら○`};
+      const part=Math.round(w*p/100), ex=part/(p/100), nf=nearFrac(p,1.5,.02);
+      const h=`全体 = ${fmt(part)}÷${fmt(p/100)}`+(nf?`（${fmt(p)}% ≈ ${nf[0]} → ${invStr(nf[0])}）`:`（1% = ${fmt(part)}÷${fmt(p)} ≈ ${fmt(sig(part/p,2))} → ×100）`);
+      const prompt=`${fmt(part)} が全体の ${fmt(p)}%\n全体は？`;
+      if(Math.abs(ex-Math.round(ex))<1e-6) return {p:prompt, a:fmt(Math.round(ex)), h};
+      return {p:prompt, a:`約 ${fmt(sig(ex,3))}`, s:`正確値 ${fmt(round(ex,1))}　±2%以内なら○`, h};
     },
     ratio(L){
       if(L===1){
-        const b=rand(4,40)*20, m=pick([1.25,1.5,2,2.5,3,4,0.5,0.75]);
-        return {p:`${fmt(b*m)} は ${fmt(b)} の何倍？`, a:`${fmt(m)}倍`};
+        const b=rand(4,40)*20, m=pick([1.25,1.5,2,2.5,3,4,0.5,0.75]), a=b*m;
+        return {p:`${fmt(a)} は ${fmt(b)} の何倍？`, a:`${fmt(m)}倍`, h:Number.isInteger(m)?`${fmt(b)}×${m} = ${fmt(a)}`:`${fmt(a)}/${fmt(b)} = ${reduce(a,b)}`};
       }
       const b=L===2?rand(120,900):rand(1200,9800);
       const a=Math.round(b*rand(L===2?30:20,L===2?400:350)/100), ex=a/b;
       const prompt=`${fmt(a)} は ${fmt(b)} の約何倍？`;
-      if(L===2) return {p:prompt, a:`約 ${ex.toFixed(1)}倍`, s:`正確値 ${ex.toFixed(2)}倍　小数第1位が合えば○`};
-      return {p:prompt, a:`約 ${ex.toFixed(2)}倍`, s:`±0.02以内なら○`};
+      if(L===2) return {p:prompt, a:`約 ${ex.toFixed(1)}倍`, s:`正確値 ${ex.toFixed(2)}倍　小数第1位が合えば○`, h:divHint(a,b)};
+      return {p:prompt, a:`約 ${ex.toFixed(2)}倍`, s:`±0.02以内なら○`, h:divHint(a,b)};
     },
     compare(L){
       const [lo,hi]=L===1?[40,99]:L===2?[150,990]:[1200,9800];
@@ -443,25 +524,32 @@
         const b=rand(lo,hi), d=rand(lo,hi), a=Math.round(b*r1/100), c=Math.round(d*r2/100);
         const x=a/b*100, y=c/d*100;
         if(a<=0 || c<=0 || Math.abs(x-y)<dmin*.6) continue;
-        return {p:`どちらが大きい？\n${fmt(a)}/${fmt(b)}　vs　${fmt(c)}/${fmt(d)}`, a:x>y?'左':'右', s:`左 ${x.toFixed(1)}%　右 ${y.toFixed(1)}%`};
+        // 右/左 = (分子の倍率)/(分母の倍率) なので、倍率の大きい方を見れば判定できる
+        const gn=c/a, gd=d/b, k=gn.toFixed(2)===gd.toFixed(2)?3:2, right=gn>gd;
+        const h=`左→右で 分子×${gn.toFixed(k)}、分母×${gd.toFixed(k)} → ${right?'分子':'分母'}の倍率が大きいので${right?'右':'左'}`;
+        return {p:`どちらが大きい？\n${fmt(a)}/${fmt(b)}　vs　${fmt(c)}/${fmt(d)}`, a:x>y?'左':'右', s:`左 ${x.toFixed(1)}%　右 ${y.toFixed(1)}%`, h};
       }
       return GEN.pct(L);
     },
     nest(L){
       if(L===1){
         const p1=pick([20,25,40,50,60,80]), p2=pick([10,20,25,50]);
-        return {p:`全体の ${p1}% が A\nA のうち ${p2}% が B\nB は全体の何%？`, a:`${fmt(p1*p2/100)}%`};
+        return {p:`全体の ${p1}% が A\nA のうち ${p2}% が B\nB は全体の何%？`, a:`${fmt(p1*p2/100)}%`, h:`${p1}% の ${PCT_FRAC[p2]} = ${fmt(p1*p2/100)}%`};
       }
-      const p1=rand(12,88), p2=rand(12,88);
-      if(L===2) return {p:`全体の ${p1}% が A\nA のうち ${p2}% が B\nB は全体の何%？`, a:`${fmt(p1*p2/100)}%`, s:`±1pt以内なら○`};
+      const p1=rand(12,88), p2=rand(12,88), nf=nearFrac(p2,1.5,.02);
+      if(L===2){
+        const h=nf ? `${p2}% ≈ ${nf[0]} → ${p1}×${nf[0]} ≈ ${fmt(round(p1*fracVal(nf[0]),1))}%` : `${p1}×${p2}÷100：${splitMul(p1,p2)}`;
+        return {p:`全体の ${p1}% が A\nA のうち ${p2}% が B\nB は全体の何%？`, a:`${fmt(p1*p2/100)}%`, s:`±1pt以内なら○`, h};
+      }
       const total=rand(12,98)*100, ex=total*p1*p2/10000;
-      return {p:`全体 ${fmt(total)}人\nうち ${p1}% が A、A の ${p2}% が B\nB は約何人？`, a:`約 ${fmt(sig(ex,3))}人`, s:`正確値 ${fmt(round(ex,1))}　±3%以内なら○`};
+      const h=`${fmt(total)}×${p1}% = ${fmt(round(total*p1/100,1))} → その${p2}%`+(nf?`（${p2}% ≈ ${nf[0]}）`:'');
+      return {p:`全体 ${fmt(total)}人\nうち ${p1}% が A、A の ${p2}% が B\nB は約何人？`, a:`約 ${fmt(sig(ex,3))}人`, s:`正確値 ${fmt(round(ex,1))}　±3%以内なら○`, h};
     }
   };
 
   // ---- 保存 ----
   const KEY='calc-trainer-v2';
-  const DEFAULT_SETTINGS={cats:Object.keys(CATS), level:'2', target:'auto', setSize:'20', weak:true, auto:true};
+  const DEFAULT_SETTINGS={cats:Object.keys(CATS), level:'2', target:'auto', setSize:'20', weak:true, auto:true, hint:true};
   let db;
   try{ db=JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ db={}; }
   db={records:[], sessions:[], review:[], ...db};
@@ -481,14 +569,14 @@
   $('allCats').addEventListener('click',()=>setAllChips(true));
   $('noCats').addEventListener('click',()=>setAllChips(false));
   $('level').value=db.settings.level; $('target').value=db.settings.target; $('setSize').value=db.settings.setSize;
-  $('weakFirst').checked=db.settings.weak; $('autoReveal').checked=db.settings.auto;
-  ['level','target','setSize','weakFirst','autoReveal'].forEach(id=>$(id).addEventListener('change',readSettings));
+  $('weakFirst').checked=db.settings.weak; $('autoReveal').checked=db.settings.auto; $('showHint').checked=db.settings.hint;
+  ['level','target','setSize','weakFirst','autoReveal','showHint'].forEach(id=>$(id).addEventListener('change',readSettings));
 
   function readSettings(){
     db.settings={
       cats:[...chips.querySelectorAll('.chip[aria-pressed="true"]')].map(b=>b.dataset.cat),
       level:$('level').value, target:$('target').value, setSize:$('setSize').value,
-      weak:$('weakFirst').checked, auto:$('autoReveal').checked
+      weak:$('weakFirst').checked, auto:$('autoReveal').checked, hint:$('showHint').checked
     };
     save();
   }
@@ -574,6 +662,7 @@
     $('question').classList.toggle('long', q.p.split('\n').length>2 || q.p.length>24);
     $('answer').textContent=q.a;
     $('answerSub').innerHTML=esc(q.s||'');
+    $('answerHint').textContent=db.settings.hint && q.h ? `解き方：${q.h}` : '';
     $('answerBox').classList.remove('show');
     $('thinkActions').hidden=false; $('gradeActions').hidden=true;
     $('timeBarWrap').hidden=!q.tg;
@@ -623,7 +712,7 @@
     if(db.records.length>3000) db.records.splice(0, db.records.length-3000);
     const idx=db.review.findIndex(r=>r.p===q.p);
     if(g!=='ok' || S.over){
-      if(idx<0) db.review.push({c:q.c, l:q.l, p:q.p, a:q.a, s:q.s||''});
+      if(idx<0) db.review.push({c:q.c, l:q.l, p:q.p, a:q.a, s:q.s||'', h:q.h||''});
       if(db.review.length>60) db.review.shift();
     } else if(idx>=0) db.review.splice(idx,1);
     save();
